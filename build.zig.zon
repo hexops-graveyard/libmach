@@ -1,0 +1,10 @@
+.{
+    .name = "libmach",
+    .version = "0.1.0",
+    .dependencies = .{
+        .mach_core = .{
+            .url = "https://pkg.machengine.org/mach-core/c09f9ba1c4507820c7d00577811fa6de8041da5c.tar.gz",
+            .hash = "12204112f56e1fbe2f6fbf22e5fc3543ae9ea38c05e77d9f78371f51a7c336f7bbf8",
+        },
+    },
+}
