@@ -10,6 +10,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    lib.installHeadersDirectory("include/mach", "mach");
     b.installArtifact(lib);
 
     const main_tests = b.addTest(.{
