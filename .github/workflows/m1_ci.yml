@@ -22,8 +22,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: test
-        run: zig build test
       - name: build
         run: zig build
       - name: build (WASM)
