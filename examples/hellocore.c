@@ -7,10 +7,25 @@ void appInit(void* userdata) {
 }
 
 MachBool appUpdate(void* userdata) {
-    // TODO: call machCorePollEvents here and print events
     // TODO: add another example `examples/hellocoretriangle.c` which does the same thing as this
     // one, but also renders a triangle using WebGPU
-    printf("appUpdate!\n");
+
+    // Poll for events
+    machCoreEventsPoll();
+
+    // Consume each event that was polled, until no more are available.
+    MachEvent event;
+    while(machCoreEventsNext(&event)) {
+        if (event.type == MachEventType_KeyPress) {
+            printf("MachEventType_KeyPress: %d\n", event.value.key_press.key);
+        } else if (event.type == MachEventType_MousePress) {
+            MachMouseButtonEvent press = event.value.mouse_press;
+            printf("MachEventType_MousePress: button:%d, pos.x:%f, pos.y:%f\n", press.button, press.pos.x, press.pos.y);
+        } else if (event.type == MachEventType_Close) {
+            return 1;
+        }
+    }
+
     return 0;
 }
 
@@ -20,7 +35,6 @@ void appDeinit(void* userdata) {
 
 // Optional
 MachBool appUpdateMainThread(void* userdata) {
-    printf("appUpdateMainThread!\n");
     return 0;
 }
 

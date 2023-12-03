@@ -36,15 +36,6 @@ const CApp = struct {
     }
 
     pub fn update(app: *App) !bool {
-        // TODO: provide a C API to access a core.pollEvents iterator
-        var iter = core.pollEvents();
-        while (iter.next()) |event| {
-            switch (event) {
-                .close => return true,
-                else => {},
-            }
-        }
-
         // TODO: in debug builds, provide a nice error if this is null
         return app.app_update.?(app.userdata) > 0;
     }
@@ -92,4 +83,84 @@ fn machAppStartFallible(
     try app.init();
     defer app.deinit();
     while (!try core.update(&app)) {}
+}
+
+// Global event iterator shared between machCoreEventsPoll and machCoreEventsNext calls.
+var iter: ?core.EventIterator = null;
+export fn machCoreEventsPoll() void {
+    if (iter != null) @panic("machCoreEventsPoll called without consuming all previous events");
+    iter = core.pollEvents();
+}
+
+export fn machCoreEventsNext(out: *c.MachEvent) c.MachBool {
+    if (iter == null) @panic("machCoreEventsNext called without calling machCoreEventsPoll first");
+
+    var event = iter.?.next() orelse {
+        iter = null;
+        return 0;
+    };
+
+    switch (event) {
+        .key_press => |v| {
+            out.type = c.MachEventType_KeyPress;
+            out.value.key_press.key = @intFromEnum(v.key);
+            out.value.key_press.mods = @bitCast(v.mods);
+        },
+        .key_repeat => |v| {
+            out.type = c.MachEventType_KeyRepeat;
+            out.value.key_repeat.key = @intFromEnum(v.key);
+            out.value.key_repeat.mods = @bitCast(v.mods);
+        },
+        .key_release => |v| {
+            out.type = c.MachEventType_KeyRelease;
+            out.value.key_release.key = @intFromEnum(v.key);
+            out.value.key_release.mods = @bitCast(v.mods);
+        },
+        .char_input => |v| {
+            out.type = c.MachEventType_CharInput;
+            out.value.char_input.codepoint = v.codepoint;
+        },
+        .mouse_motion => |v| {
+            out.type = c.MachEventType_MouseMotion;
+            out.value.mouse_motion.pos.x = v.pos.x;
+            out.value.mouse_motion.pos.y = v.pos.y;
+        },
+        .mouse_press => |v| {
+            out.type = c.MachEventType_MousePress;
+            out.value.mouse_press.button = @intFromEnum(v.button);
+            out.value.mouse_press.pos.x = v.pos.x;
+            out.value.mouse_press.pos.y = v.pos.y;
+            out.value.mouse_press.mods = @bitCast(v.mods);
+        },
+        .mouse_release => |v| {
+            out.type = c.MachEventType_MouseRelease;
+            out.value.mouse_release.button = @intFromEnum(v.button);
+            out.value.mouse_release.pos.x = v.pos.x;
+            out.value.mouse_release.pos.y = v.pos.y;
+            out.value.mouse_release.mods = @bitCast(v.mods);
+        },
+        .mouse_scroll => |v| {
+            out.type = c.MachEventType_MouseScroll;
+            out.value.mouse_scroll.xoffset = v.xoffset;
+            out.value.mouse_scroll.yoffset = v.yoffset;
+        },
+        .joystick_connected => |v| {
+            out.type = c.MachEventType_JoystickConnected;
+            out.value.joystick_connected = @intFromEnum(v);
+        },
+        .joystick_disconnected => |v| {
+            out.type = c.MachEventType_JoystickDisconnected;
+            out.value.joystick_disconnected = @intFromEnum(v);
+        },
+        .framebuffer_resize => |v| {
+            out.type = c.MachEventType_FramebufferResize;
+            out.value.framebuffer_resize.width = v.width;
+            out.value.framebuffer_resize.height = v.height;
+        },
+        .focus_gained => out.type = c.MachEventType_FocusGained,
+        .focus_lost => out.type = c.MachEventType_FocusLost,
+        .close => out.type = c.MachEventType_Close,
+    }
+
+    return 1;
 }
