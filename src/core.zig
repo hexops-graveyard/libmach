@@ -80,7 +80,7 @@ fn machAppStartFallible(
 
     // Initialize GPU implementation
     if (comptime core.options.use_wgpu) try core.wgpu.Impl.init(core.allocator, .{});
-    if (comptime core.options.use_dgpu) try core.dusk.Impl.init(core.allocator, .{});
+    if (comptime core.options.use_sysgpu) try core.sysgpu.Impl.init(core.allocator, .{});
 
     var app: CApp = .{
         .userdata = userdata,
